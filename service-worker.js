@@ -2,7 +2,6 @@ const VERSION = 'v1.0.2';
 const CACHE_NAME = `llsk-gacha-${VERSION}`;
 const ASSETS = [
   './',
-  './gacha_record.html',
   './manifest.webmanifest',
   './service-worker.js',
   './icons/icon-180.png',
