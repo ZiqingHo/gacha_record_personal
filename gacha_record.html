@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>《恋与深空》SSR 抽卡记录器</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0f1115">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <style>
+    :root{
+      --bg:#0f1115;
+      --panel:#151923;
+      --panel-2:#1b2130;
+      --muted:#8a93a6;
+      --text:#e6e9f2;
+      --accent:#7aa2f7;
+      --accent-2:#a78bfa;
+      --danger:#ef4444;
+      --ok:#22c55e;
+      --role-shen:#c7b3ff;
+      --role-li:#60a5fa;
+      --role-qi:#f9a8d4;
+      --role-qin:#ef4444;
+      --role-xia:#fb923c;
+      --border:#242b3a;
+      --chip:#232a3b;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", Arial, "Helvetica Neue", Helvetica, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 80% -10%, rgba(122,162,247,.2), transparent 60%),
+                  radial-gradient(900px 500px at -10% 110%, rgba(167,139,250,.15), transparent 50%),
+                  var(--bg);
+      color:var(--text);
+    }
+    header{ padding:24px 20px 8px; }
+    .title{ display:flex; align-items:center; gap:14px; }
+    .title .app-icon{
+      width:42px; height:42px; border-radius:12px; background:
+        linear-gradient(135deg, rgba(122,162,247,.25), rgba(167,139,250,.25));
+      display:grid; place-items:center; box-shadow: var(--shadow);
+      border:1px solid var(--border); overflow:hidden;
+    }
+    .app-img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .title h1{ font-size:20px; margin:0; letter-spacing:.5px; }
+    .actions{ margin-top:10px; display:flex; flex-wrap:wrap; gap:10px; }
+    .btn{
+      background:linear-gradient(180deg,var(--panel-2),#121621);
+      border:1px solid var(--border);
+      color:var(--text);
+      padding:10px 14px; border-radius:12px; cursor:pointer;
+      transition:.15s transform,.15s filter,.15s background;
+      box-shadow: var(--shadow);
+      font-size:14px;
+    }
+    .btn:hover{ transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0); filter:brightness(.95)}
+    .btn.primary{ background:linear-gradient(180deg, #1c2030, #151927); border-color:#2a3550; }
+    .btn.ghost{ background:rgba(255,255,255,.04); }
+    .container{ display:grid; grid-template-columns: 380px 1fr; gap:16px; padding:0 20px 24px; align-items:start; }
+    @media (max-width: 980px){ .container{ grid-template-columns: 1fr; } }
+    .card{ background:linear-gradient(180deg,var(--panel), #121620); border:1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .card h2{ font-size:16px; margin:0 0 12px; padding-bottom:10px; border-bottom:1px dashed var(--border); color:#d7def0; }
+    .card .body{ padding:16px; }
+    .formgrid{ display:grid; grid-template-columns: 1fr; gap:12px; }
+    label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
+    input[type="text"], input[type="datetime-local"], input[type="date"], select{
+      width:100%; background: var(--panel-2); color:var(--text); border:1px solid var(--border);
+      border-radius:12px; padding:10px 12px; outline:none; font-size:14px;
+    }
+    .row{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .hint{ font-size:12px; color:var(--muted); margin-top:2px; }
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+    .btn.small{ padding:8px 12px; font-size:13px; }
+    .statgrid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
+    @media (max-width: 620px){ .statgrid{ grid-template-columns: repeat(2, 1fr); } }
+    .stat{ background: var(--chip); border:1px solid var(--border); border-radius:12px; padding:12px; min-height:74px; }
+    .stat .k{ font-size:12px; color:var(--muted); }
+    .stat .v{ margin-top:6px; font-size:20px; font-weight:600; }
+    .tablewrap{ overflow:auto; border-radius: 12px; border:1px solid var(--border); }
+    table{ width:100%; border-collapse: collapse; min-width: 900px; }
+    th, td{ padding:10px 12px; border-bottom:1px solid var(--border); text-align:left; }
+    th{ position:sticky; top:0; background: #121722; font-size:12px; color:#c2c9da; user-select:none; cursor:pointer; }
+    tr:hover td{ background: rgba(255,255,255,.02); }
+    .op-btn{ background:rgba(255,255,255,.05); border:1px solid var(--border); color:#dbe2f6; padding:6px 10px; border-radius:10px; cursor:pointer; font-size:12px; }
+    .op-btn + .op-btn{ margin-left:6px; }
+    .role-pill{ display:inline-flex; align-items:center; padding:4px 8px; border-radius:999px; border:1px solid var(--border); font-size:12px; gap:6px; background: rgba(255,255,255,.03); }
+    .dot{ width:8px; height:8px; border-radius:999px; display:inline-block; }
+    .pill-shen .dot{ background: var(--role-shen); } .pill-li .dot{ background: var(--role-li); }
+    .pill-qi .dot{ background: var(--role-qi); } .pill-qin .dot{ background: var(--role-qin); }
+    .pill-xia .dot{ background: var(--role-xia); }
+    .footer-note{ color:var(--muted); font-size:12px; margin-top:10px; }
+    .sep{height:1px;background:var(--border);margin:12px 0;}
+    .mt16{margin-top:16px}
+    .file{ display:none; }
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:#0d1220; border:1px solid var(--border); padding:2px 6px; border-radius:6px; font-size:12px; }
+    .muted{color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <div class="app-icon" aria-label="应用图标">
+        <img src="icons/icon-180.png" alt="icon" class="app-img">
+      </div>
+      <h1>《恋与深空》SSR 抽卡记录器</h1>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="exportJsonBtn">导出 JSON</button>
+      <button class="btn primary" id="exportCsvBtn">导出 CSV</button>
+      <button class="btn primary" id="exportExcelBtn">导出 Excel（含高亮）</button>
+      <input class="file" type="file" id="importFile" accept=".json,.csv" />
+      <button class="btn" id="importBtn">导入 JSON/CSV</button>
+      <button class="btn ghost" id="clearAllBtn" title="仅清空本地缓存">清空本地（慎用）</button>
+    </div>
+  </header>
+  <main class="container">
+    <section class="card">
+      <div class="body">
+        <h2>新增记录</h2>
+        <div class="formgrid">
+          <div><label>卡池（必填）</label><input type="text" id="poolInput" placeholder="如：沈星回·限定卡池"></div>
+          <div><label>日期时间（可选）</label><input type="datetime-local" id="datetimeInput"><div class="hint">留空将自动填入当前时间</div></div>
+          <div class="row">
+            <div><label>角色</label><select id="roleSelect"><option>沈星回</option><option>黎深</option><option>祁煜</option><option>秦彻</option><option>夏以昼</option></select></div>
+            <div><label>类型</label><select id="typeSelect"><option>限定</option><option>常驻</option></select></div>
+          </div>
+          <div id="limitedWrapper"><label>限定卡面名</label><input type="text" id="limitedNameInput" placeholder="如：繁星献礼"></div>
+          <div id="permanentWrapper" style="display:none"><label>常驻卡名</label><select id="permanentNameSelect"></select></div>
+          <div class="row">
+            <div><label>出金抽数（1–70，必填）</label><input type="text" id="pullsInput" placeholder="整数 1-70"></div>
+            <div><label>备注</label><select id="remarkSelect"><option>无</option><option>双金</option><option>三金</option></select></div>
+          </div>
+          <div class="chips"><button class="btn primary" id="addBtn">添加记录</button><span class="hint">数据保存在浏览器 <span class="kbd">localStorage</span>。</span></div>
+        </div>
+        <div class="sep"></div>
+        <h2>筛选 / 搜索</h2>
+        <div class="formgrid">
+          <div><label>卡池关键字</label><input type="text" id="filterPoolKw" placeholder="按卡池名称模糊匹配"></div>
+          <div><label>角色</label><select id="filterRole"><option value="全部">全部</option><option>沈星回</option><option>黎深</option><option>祁煜</option><option>秦彻</option><option>夏以昼</option></select></div>
+          <div><label>类型</label><select id="filterType"><option value="全部">全部</option><option>限定</option><option>常驻</option></select></div>
+          <div><label>起始日期</label><input type="date" id="filterFrom"></div>
+          <div><label>结束日期</label><input type="date" id="filterTo"></div>
+          <div><label>关键字（卡面/备注）</label><input type="text" id="filterKeyword" placeholder="在卡面名与备注中模糊匹配"></div>
+          <div class="chips"><button class="btn small primary" id="filterApplyBtn">应用筛选</button><button class="btn small" id="filterResetBtn">重置筛选</button><span class="muted" id="filterInfo"></span></div>
+        </div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="body">
+        <h2>统计</h2>
+        <div class="statgrid" id="statGrid">
+          <div class="stat"><div class="k">限定/常驻</div><div class="v" id="statTotal">0/0</div></div>
+          <div class="stat"><div class="k">双金/三金</div><div class="v" id="statMulti">0/0</div></div>
+          <div class="stat"><div class="k">限定平均抽数</div><div class="v" id="statAvgLimited">-</div></div>
+          <div class="stat"><div class="k">SSR 平均抽数（总）</div><div class="v" id="statAvgAll">-</div></div>
+        </div>
+        <div class="mt16">
+          <h2>记录表</h2>
+          <div class="tablewrap">
+            <table id="recordTable">
+              <thead><tr>
+                <th data-key="date" title="点击排序">日期</th>
+                <th data-key="pool" title="点击排序">卡池</th>
+                <th data-key="role" title="点击排序">角色</th>
+                <th data-key="type" title="点击排序">类型</th>
+                <th>卡面</th>
+                <th data-key="pulls" title="点击排序">出金抽数</th>
+                <th>备注</th>
+                <th>操作</th>
+              </tr></thead>
+              <tbody id="recordTbody"></tbody>
+            </table>
+          </div>
+          <div class="footer-note">提示：点击表头可排序（日期/卡池/角色/类型/出金抽数）。</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+  (function(){
+    const STORAGE_KEY = 'gacha_records_v1';
+    const ROLE_COLORS = {
+      '沈星回': { ui: getCssVar('--role-shen'), csv: '淡紫色', hex: '#c7b3ff' },
+      '黎深':   { ui: getCssVar('--role-li'),   csv: '蓝色',   hex: '#60a5fa' },
+      '祁煜':   { ui: getCssVar('--role-qi'),   csv: '淡粉色', hex: '#f9a8d4' },
+      '秦彻':   { ui: getCssVar('--role-qin'),  csv: '红色',   hex: '#ef4444' },
+      '夏以昼': { ui: getCssVar('--role-xia'),  csv: '橙色',   hex: '#fb923c' },
+    };
+    const PERMANENT_MAP = {
+      '沈星回': ['逐光破影','逐光迷心','流光轻跃','毛绒陷阱','时光碎片'],
+      '黎深':   ['永恒心役','永恒封尘','眷眷余晖','失序','余温过午'],
+      '祁煜':   ['深海醉金','深海成诺','花落未夏','闻香','隐秘日出'],
+      '秦彻':   ['掠心夺味','掠心相授','飞羽向夜','无效禁锢','方寸盈余'],
+      '夏以昼': ['远空迷航','远空棠雨','无尽夏','暗潮边缘','限定余味'],
+    };
+    const poolInput = document.getElementById('poolInput');
+    const datetimeInput = document.getElementById('datetimeInput');
+    const roleSelect = document.getElementById('roleSelect');
+    const typeSelect = document.getElementById('typeSelect');
+    const limitedWrapper = document.getElementById('limitedWrapper');
+    const limitedNameInput = document.getElementById('limitedNameInput');
+    const permanentWrapper = document.getElementById('permanentWrapper');
+    const permanentNameSelect = document.getElementById('permanentNameSelect');
+    const pullsInput = document.getElementById('pullsInput');
+    const remarkSelect = document.getElementById('remarkSelect');
+    const filterPoolKw = document.getElementById('filterPoolKw');
+    const filterRole = document.getElementById('filterRole');
+    const filterType = document.getElementById('filterType');
+    const filterFrom = document.getElementById('filterFrom');
+    const filterTo = document.getElementById('filterTo');
+    const filterKeyword = document.getElementById('filterKeyword');
+    const filterApplyBtn = document.getElementById('filterApplyBtn');
+    const filterResetBtn = document.getElementById('filterResetBtn');
+    const filterInfo = document.getElementById('filterInfo');
+    const addBtn = document.getElementById('addBtn');
+    const exportJsonBtn = document.getElementById('exportJsonBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const statTotal = document.getElementById('statTotal');
+    const statMulti = document.getElementById('statMulti');
+    const statAvgLimited = document.getElementById('statAvgLimited');
+    const statAvgAll = document.getElementById('statAvgAll');
+    const recordTbody = document.getElementById('recordTbody');
+    const table = document.getElementById('recordTable');
+    let records = loadRecords();
+    let sortState = { key: 'date', dir: 'desc' };
+    let filters = getFiltersFromUI();
+    fillPermanentOptions(roleSelect.value);
+    render();
+    roleSelect.addEventListener('change', () => { if (typeSelect.value === '常驻') fillPermanentOptions(roleSelect.value); });
+    typeSelect.addEventListener('change', () => {
+      const t = typeSelect.value;
+      if (t === '限定'){ limitedWrapper.style.display = ''; permanentWrapper.style.display = 'none'; }
+      else { limitedWrapper.style.display = 'none'; permanentWrapper.style.display = ''; fillPermanentOptions(roleSelect.value); }
+    });
+    addBtn.addEventListener('click', onAdd);
+    exportJsonBtn.addEventListener('click', exportJSON);
+    exportCsvBtn.addEventListener('click', exportCSV);
+    exportExcelBtn.addEventListener('click', exportExcel);
+    importBtn.addEventListener('click', () => importFile.click());
+    importFile.addEventListener('change', onImportFile);
+    clearAllBtn.addEventListener('click', clearAll);
+    filterApplyBtn.addEventListener('click', () => { filters = getFiltersFromUI(); render(); });
+    filterResetBtn.addEventListener('click', () => { filterPoolKw.value=''; filterRole.value='全部'; filterType.value='全部'; filterFrom.value=''; filterTo.value=''; filterKeyword.value=''; filters=getFiltersFromUI(); render(); });
+    table.querySelectorAll('th[data-key]').forEach(th=>{
+      th.addEventListener('click', ()=>{ const key=th.getAttribute('data-key'); if (sortState.key===key){ sortState.dir= sortState.dir==='asc'?'desc':'asc'; } else { sortState.key=key; sortState.dir='asc'; } renderTable(getFilteredRecords()); });
+    });
+    function getCssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+    function uid(){ return 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
+    function loadRecords(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return []; const arr=JSON.parse(raw); return Array.isArray(arr)?arr:[]; }catch(e){ return []; } }
+    function saveRecords(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
+    function fillPermanentOptions(role){ permanentNameSelect.innerHTML=''; (PERMANENT_MAP[role]||[]).forEach(name=>{ const opt=document.createElement('option'); opt.textContent=name; permanentNameSelect.appendChild(opt); }); }
+    function coercePulls(v){ if (v===null||v===undefined||v==='') return null; const n=Number(v); if(!Number.isInteger(n)) return null; if(n<1||n>70) return null; return n; }
+    function onAdd(){
+      const pool=poolInput.value.trim(); if(!pool){ alert('请填写【卡池】'); return; }
+      const role=roleSelect.value; const type=typeSelect.value;
+      let cardName = type==='限定' ? (limitedNameInput.value||'').trim() : (permanentNameSelect.value||'');
+      const pulls=coercePulls(pullsInput.value.trim()); if(pulls===null){ alert('【出金抽数】需为 1–70 的整数'); return; }
+      const remark=remarkSelect.value;
+      let dt=datetimeInput.value; if(!dt){ dt=toLocalDatetimeStr(new Date()); }
+      const rec={ id:uid(), date:dt, pool, role, type, cardName, pulls, remark };
+      records.unshift(rec); saveRecords(); clearForm(); render();
+    }
+    function clearForm(){ datetimeInput.value=''; limitedNameInput.value=''; pullsInput.value=''; remarkSelect.value='无'; }
+    function toLocalDatetimeStr(d){ const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+    function render(){ const filtered=getFilteredRecords(); filterInfo.textContent = filtered.length===records.length ? '（未应用筛选）' : `（已筛选：${filtered.length} / ${records.length} 条）`; renderStats(filtered); renderTable(filtered); }
+    function getFiltersFromUI(){ let from=(filterFrom.value||''); let to=(filterTo.value||''); if(from && to && from>to){ const tmp=from; from=to; to=tmp; } return { poolKw:(filterPoolKw.value||'').trim().toLowerCase(), role:filterRole.value||'全部', type:filterType.value||'全部', from, to, keyword:(filterKeyword.value||'').trim().toLowerCase(), }; }
+    function recordDateOnly(dt){ if(!dt) return ''; return String(dt).slice(0,10); }
+    function getFilteredRecords(){
+      const f=filters;
+      return records.filter(r=>{
+        if (f.poolKw){ const pool=(r.pool||'').toLowerCase(); if(!pool.includes(f.poolKw)) return false; }
+        if (f.role && f.role!=='全部'){ if (r.role !== f.role) return false; }
+        if (f.type && f.type!=='全部'){ if (r.type !== f.type) return false; }
+        const rDate=recordDateOnly(r.date);
+        if (f.from){ if(!rDate || rDate < f.from) return false; }
+        if (f.to){ if(!rDate || rDate > f.to) return false; }
+        if (f.keyword){ const card=(r.cardName||'').toLowerCase(); const remark=(r.remark||'').toLowerCase(); if(!card.includes(f.keyword)&&!remark.includes(f.keyword)) return false; }
+        return true;
+      });
+    }
+    function sortRows(rows){
+      const {key, dir}=sortState;
+      return [...rows].sort((a,b)=>{
+        let va=a[key], vb=b[key];
+        if (key==='pulls'){ va=(typeof va==='number')?va:Infinity; vb=(typeof vb==='number')?vb:Infinity; }
+        else { va=(va||'')+''; vb=(vb||'')+''; }
+        if (va<vb) return dir==='asc'?-1:1; if (va>vb) return dir==='asc'?1:-1; return 0;
+      });
+    }
+    function renderStats(filtered){
+      const limitedCount = filtered.filter(r=>r.type==='限定').length;
+      const permCount    = filtered.filter(r=>r.type==='常驻').length;
+      const dCount = filtered.filter(r=>r.remark==='双金').length;
+      const tCount = filtered.filter(r=>r.remark==='三金').length;
+      const limitedPulls = filtered.filter(r=>r.type==='限定' && typeof r.pulls==='number');
+      const allPulls     = filtered.filter(r=> typeof r.pulls==='number');
+      const avgLimited   = limitedPulls.length ? (limitedPulls.reduce((s,r)=>s+r.pulls,0)/limitedPulls.length) : null;
+      const avgAll       = allPulls.length ? (allPulls.reduce((s,r)=>s+r.pulls,0)/allPulls.length) : null;
+      statTotal.textContent = `${limitedCount}/${permCount}`;
+      statMulti.textContent = `${dCount}/${tCount}`;
+      statAvgLimited.textContent = avgLimited===null?'-':avgLimited.toFixed(2);
+      statAvgAll.textContent = avgAll===null?'-':avgAll.toFixed(2);
+    }
+    function renderTable(filtered){
+      const rows=sortRows(filtered);
+      recordTbody.innerHTML='';
+      for(const r of rows){
+        const tr=document.createElement('tr');
+        const tdDate=tdText(formatDisplayDate(r.date));
+        const tdPool=tdText(r.pool||'');
+        const tdRole=document.createElement('td'); tdRole.appendChild(rolePill(r.role));
+        const tdType=tdText(r.type||'');
+        const tdCard=tdText(r.cardName||'');
+        const tdPulls=tdText(typeof r.pulls==='number'? r.pulls : '');
+        const tdRemark=tdText(r.remark||'');
+        const tdOps=document.createElement('td');
+        const editBtn=btnOp('编辑',()=>editRecord(r.id));
+        const delBtn=btnOp('删除',()=>deleteRecord(r.id));
+        tdOps.append(editBtn, delBtn);
+        tr.append(tdDate, tdPool, tdRole, tdType, tdCard, tdPulls, tdRemark, tdOps);
+        recordTbody.appendChild(tr);
+      }
+      table.querySelectorAll('th[data-key]').forEach(th=>{
+        const k=th.getAttribute('data-key'); th.textContent=th.textContent.replace(/[\s▲▼]*$/,''); if(k===sortState.key){ th.textContent += sortState.dir==='asc'?' ▲':' ▼'; }
+      });
+    }
+    function tdText(txt){ const td=document.createElement('td'); td.textContent=txt; return td; }
+    function btnOp(label, handler){ const b=document.createElement('button'); b.className='op-btn'; b.textContent=label; b.addEventListener('click', handler); return b; }
+    function rolePill(role){ const span=document.createElement('span'); span.className=`role-pill ${roleClass(role)}`; const dot=document.createElement('i'); dot.className='dot'; const text=document.createElement('span'); text.textContent=role||''; span.append(dot,text); return span; }
+    function roleClass(role){ switch(role){ case '沈星回': return 'pill-shen'; case '黎深': return 'pill-li'; case '祁煜': return 'pill-qi'; case '秦彻': return 'pill-qin'; case '夏以昼': return 'pill-xia'; default: return ''; } }
+    function editRecord(id){
+      const idx=records.findIndex(r=>r.id===id); if(idx<0) return; const r={...records[idx]};
+      const p=(label,val)=>prompt(label, val ?? '');
+      let date=p('日期时间（yyyy-MM-ddTHH:mm）', r.date); if(!date) date=r.date;
+      let pool=p('卡池', r.pool); if(!pool){ alert('卡池不能为空'); return; }
+      let role=p('角色（沈星回/黎深/祁煜/秦彻/夏以昼）', r.role); if(!ROLE_COLORS[role]){ alert('角色输入不合法'); return; }
+      let type=p('类型（限定/常驻）', r.type); if(!(type==='限定'||type==='常驻')){ alert('类型需为“限定”或“常驻”'); return; }
+      let cardName=r.cardName;
+      if(type==='限定'){ cardName=p('限定卡面名', r.cardName||'') || ''; }
+      else{ const options=(PERMANENT_MAP[role]||[]).join('、'); cardName=p(`常驻卡名（可选：${options}）`, r.cardName||'') || ''; }
+      let pullsStr=p('出金抽数（1–70，留空则不修改）', String(r.pulls ?? ''));
+      let pulls=r.pulls; if(pullsStr!==null && pullsStr!==''){ const parsed=coercePulls(pullsStr.trim()); if(parsed===null){ alert('出金抽数需为 1–70 的整数'); return; } pulls=parsed; }
+      let remark=p('备注（无/双金/三金）', r.remark||'无') || '无'; if(!['无','双金','三金'].includes(remark)) remark='无';
+      records[idx] = { ...r, date, pool, role, type, cardName, pulls, remark }; saveRecords(); render();
+    }
+    function deleteRecord(id){ const r=records.find(x=>x.id===id); if(!r) return; if(!confirm(`删除该记录？\n[${formatDisplayDate(r.date)}] ${r.pool} / ${r.role} / ${r.type}`)) return; records=records.filter(x=>x.id!==id); saveRecords(); render(); }
+    function exportJSON(){ const rows=sortRows(getFilteredRecords()); const blob=new Blob([JSON.stringify(rows, null, 2)], {type:'application/json;charset=utf-8'}); triggerDownload(blob, `gacha_records_${dateTag()}.json`); }
+    function exportCSV(){ const rows=sortRows(getFilteredRecords()); const header=['日期','卡池','角色','类型','卡面','出金抽数','备注']; const lines=[header.join(',')]; for(const r of rows){ const row=[r.date||'', r.pool||'', r.role||'', r.type||'', r.cardName||'', (typeof r.pulls==='number'? r.pulls : ''), r.remark||''].map(csvEscapeNewlines).map(csvEscape); lines.push(row.join(',')); } const content=lines.join('\n'); const blob=new Blob([content], {type:'text/csv;charset=utf-8'}); triggerDownload(blob, `gacha_records_${dateTag()}.csv`); }
+    function exportExcel(){ const rows=sortRows(getFilteredRecords()); const getRoleBg=role=>(ROLE_COLORS[role]?.hex||'#333333'); const html=`<!DOCTYPE html>
+<html><meta charset="UTF-8"><head><title>SSR 抽卡记录</title></head><body><table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,'PingFang SC','Microsoft YaHei',sans-serif;font-size:12pt;"><thead style="background:#222;color:#fff;"><tr><th>日期</th><th>卡池</th><th>角色</th><th>类型</th><th>卡面</th><th>出金抽数</th><th>备注</th></tr></thead><tbody>${rows.map(r=>{const date=(r.date||'').toString().replace(/\n/g,' '); const pool=(r.pool||'').toString().replace(/\n/g,' '); const role=(r.role||'').toString().replace(/\n/g,' '); const type=(r.type||'').toString().replace(/\n/g,' '); const card=(r.cardName||'').toString().replace(/\n/g,' '); const pulls=(typeof r.pulls==='number'? r.pulls : '').toString(); const remark=(r.remark||'').toString().replace(/\n/g,' '); const roleBg=getRoleBg(r.role); const rgb=hexToRgb(roleBg); const lum=rgb?(0.2126*rgb.r+0.7152*rgb.g+0.0722*rgb.b):0; const roleColor=lum>180?'#111':'#fff'; return `<tr><td>${escapeHtml(date)}</td><td>${escapeHtml(pool)}</td><td style="background:${roleBg};color:${roleColor};font-weight:600;">${escapeHtml(role)}</td><td>${escapeHtml(type)}</td><td>${escapeHtml(card)}</td><td>${escapeHtml(pulls)}</td><td>${escapeHtml(remark)}</td></tr>`;}).join('')}</tbody></table></body></html>`; const blob=new Blob([html], {type:'application/vnd.ms-excel;charset=utf-8'}); triggerDownload(blob, `gacha_records_${dateTag()}.xls`); }
+    function csvEscapeNewlines(v){ return String(v).replace(/\r\n|\r|\n/g, '\\n'); }
+    function csvEscape(v){ const s=String(v); return /[",\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s; }
+    function isLikelyJSON(text){ const t=text.trim(); return ((t.startsWith('[')||t.startsWith('{')) && /[\{\}\[\]:]/.test(t)); }
+    function onImportFile(e){
+      const file=e.target.files?.[0]; if(!file) return; const reader=new FileReader();
+      reader.onload=()=>{ try{ const text=String(reader.result||''); let imported=[]; if(file.name.toLowerCase().endsWith('.json') || isLikelyJSON(text)){ imported=importFromJSON(text); } else { imported=importFromCSV(text); } if(imported.length===0){ alert('未解析到有效记录'); importFile.value=''; return; } const map=new Map(records.map(r=>[r.id,r])); for(const r of imported){ if(!r.id) r.id=uid(); r.pulls=coercePulls(r.pulls); map.set(r.id, { ...map.get(r.id), ...r }); } records=[...map.values()]; saveRecords(); render(); alert(`导入完成，共合并 ${imported.length} 条记录。`);} catch(err){ console.error(err); alert('导入失败：'+err.message); } finally{ importFile.value=''; } };
+      reader.readAsText(file, 'utf-8');
+    }
+    function importFromJSON(text){ const arr=JSON.parse(text); if(Array.isArray(arr)) return sanitizeImportedArray(arr); if(arr && Array.isArray(arr.records)) return sanitizeImportedArray(arr.records); return []; }
+    function importFromCSV(text){ const rows=parseCSV(text); if(rows.length===0) return []; const header=rows[0].map(h=>h.trim()); const idx=(names)=>{ for(const name of names){ const i=header.indexOf(name); if(i>=0) return i; } return -1; }; const i_id=idx(['id','ID']); const i_date=idx(['日期','date']); const i_pool=idx(['卡池','pool']); const i_role=idx(['角色','role']); const i_type=idx(['类型','type']); const i_card=idx(['卡面','cardName','card']); const i_pulls=idx(['出金抽数','pulls']); const i_remark=idx(['备注','remark']); const list=[]; for(let r=1; r<rows.length; r++){ const line=rows[r]; if(line.length===1 && line[0].trim()==='') continue; const rec={ id: i_id>=0 ? line[i_id].trim() : uid(), date: i_date>=0 ? revertEscapedNewlines(line[i_date].trim()) : toLocalDatetimeStr(new Date()), pool: i_pool>=0 ? revertEscapedNewlines(line[i_pool].trim()) : '', role: i_role>=0 ? line[i_role].trim() : '', type: i_type>=0 ? line[i_type].trim() : '', cardName: i_card>=0 ? revertEscapedNewlines(line[i_card].trim()) : '', pulls: i_pulls>=0 ? parseMaybeNumber(line[i_pulls].trim()) : null, remark: i_remark>=0 ? line[i_remark].trim() : '无', }; list.push(rec);} return sanitizeImportedArray(list); }
+    function sanitizeImportedArray(arr){ const out=[]; for(const r of arr){ if(!r) continue; const clean={ id:(r.id||'').toString()||uid(), date:(r.date||r.datetime||'').toString()||toLocalDatetimeStr(new Date()), pool:(r.pool||r.池子||r.卡池||'').toString(), role:(r.role||r.角色||'').toString(), type:(r.type||r.类型||'').toString(), cardName:(r.cardName||r.卡面||'').toString(), pulls:r.pulls ?? r.抽数 ?? r.出金抽数 ?? null, remark:(r.remark||r.备注||'无').toString(), }; clean.pulls=coercePulls(clean.pulls); out.push(clean);} return out; }
+    function parseCSV(text){ const rows=[]; let i=0, cur='', row=[], inQuotes=false; const pushCell=()=>{ row.push(cur); cur=''; }; const pushRow=()=>{ rows.push(row); row=[]; }; while(i<text.length){ const ch=text[i]; if(inQuotes){ if(ch === '"'){ if(text[i+1]==='"'){ cur+='"'; i+=2; continue; } inQuotes=false; i++; continue; } else { cur+=ch; i++; continue; } } else { if(ch==='"'){ inQuotes=true; i++; continue; } if(ch===','){ pushCell(); i++; continue; } if(ch==='\n'){ pushCell(); pushRow(); i++; continue; } if(ch==='\r'){ i++; continue; } cur+=ch; i++; } } pushCell(); pushRow(); while(rows.length && rows[rows.length-1].length===1 && rows[rows.length-1][0].trim()===''){ rows.pop(); } return rows; }
+    function revertEscapedNewlines(s){ return s.replace(/\\n/g, '\n'); }
+    function parseMaybeNumber(s){ if(s==='') return null; const n=Number(s); return Number.isFinite(n)?n:null; }
+    function dateTag(){ const d=new Date(); const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`; }
+    function triggerDownload(blob, filename){ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); setTimeout(()=>URL.revokeObjectURL(url), 0); }
+    function clearAll(){ if(!confirm('确定清空本地所有记录？此操作不可撤销。')) return; records=[]; saveRecords(); render(); }
+    function formatDisplayDate(dtStr){ if(!dtStr) return ''; return dtStr.replace('T',' '); }
+    function hexToRgb(hex){ if(!/^#?[0-9a-fA-F]{6}$/.test(hex||'')) return null; const h=hex.replace('#',''); return {r:parseInt(h.slice(0,2),16), g:parseInt(h.slice(2,4),16), b:parseInt(h.slice(4,6),16)}; }
+    function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+  })();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js');
+      });
+    }
+  </script>
+</body>
+</html>
