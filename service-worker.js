@@ -28,16 +28,32 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
+  const accept = req.headers.get('accept') || '';
+
+  // 对页面导航/HTML，网络优先，离线回退缓存
+  if (req.mode === 'navigate' || accept.includes('text/html')) {
+    event.respondWith(
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+        return res;
+      }).catch(() => caches.match('./gacha_record.html'))
+    );
+    return;
+  }
+
+  // 其它静态资源走 cache-first（你原来的策略）
   event.respondWith(
-    caches.match(req).then((cached) => {
+    caches.match(req).then(cached => {
       if (cached) return cached;
-      return fetch(req).then((res) => {
+      return fetch(req).then(res => {
         if (req.method === 'GET' && res && res.status === 200 && res.type === 'basic') {
-          const resClone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
         }
         return res;
-      }).catch(() => caches.match('./gacha_record.html'));
+      });
     })
   );
 });
+
