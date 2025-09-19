@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>抽卡记录（SSR 专用）｜恋与深空</title>
+  <meta name="description" content="记录《恋与深空》SSR 抽卡：角色固定选项、限定/常驻、常驻卡名联动、双金/三金备注、可手输或自动时间、导入导出与统计。" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="深空抽卡">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0b0f17">
+  <link rel="apple-touch-icon" href="apple-touch-icon-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root { --bg:#0b0f17; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --accent:#7c3aed; --accent-2:#22d3ee; --border:#223049 }
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; margin:0; background: radial-gradient(1200px 600px at 20% -10%, rgba(34,211,238,.15), transparent), radial-gradient(1000px 500px at 120% 10%, rgba(124,58,237,.12), transparent), var(--bg); color:var(--text)}
+    header{position:sticky; top:0; z-index:10; backdrop-filter:saturate(1.2) blur(8px); background:rgba(11,15,23,.7); border-bottom:1px solid var(--border)}
+    .wrap{max-width:1100px; margin:0 auto; padding:max(16px, env(safe-area-inset-top)) 16px 16px 16px}
+    .title{display:flex; align-items:center; gap:10px}
+    .logo{width:28px; height:28px; border-radius:8px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow:0 0 0 2px rgba(255,255,255,.06) inset}
+    h1{font-size:18px; margin:0}
+    .grid{display:grid; gap:16px}
+    @media(min-width:900px){ .grid{grid-template-columns: 360px 1fr} }
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)); border:1px solid var(--border); border-radius:16px; padding:14px}
+    .card h2{font-size:16px; margin:0 0 10px 0}
+    label{display:block; font-size:12px; color:var(--muted); margin:8px 0 6px}
+    input, select, textarea{width:100%; background:#0f1522; border:1px solid #1f2a44; color:var(--text); border-radius:10px; padding:10px; outline:none}
+    .row{display:flex; gap:10px}
+    .row>*{flex:1}
+    .btn{cursor:pointer; border:1px solid #263657; padding:10px 12px; border-radius:12px; background:#0f1522; color:var(--text)}
+    .btn:hover{border-color:#365a9a}
+    .btn.primary{background:linear-gradient(135deg, rgba(124,58,237,.15), rgba(34,211,238,.12)); border-color:#4f3ca9}
+    .btn.ghost{background:transparent}
+    .btn.danger{border-color:#7a2631; background:rgba(239,68,68,.15)}
+    .toolbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+    .muted{color:var(--muted)}
+    table{width:100%; border-collapse:collapse}
+    th, td{padding:10px; border-bottom:1px dashed #1f2a44; text-align:left; font-size:13px}
+    th{color:#cbd5e1; user-select:none; cursor:pointer}
+    tr:hover td{background:rgba(255,255,255,.02)}
+    .pill{padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid var(--border)}
+    .pill.ssr{border-color:#6b21a8; color:#e9d5ff}
+    .empty{padding:30px; text-align:center; color:var(--muted)}
+    .right-head{display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .hint{font-size:12px; color:var(--muted)}
+    .badge{display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid var(--border); font-size:12px}
+    details summary{cursor:pointer}
+    .tests{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#0f1522; border:1px solid #1f2a44; border-radius:12px; padding:10px; white-space:pre-wrap}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap title">
+      <div class="logo"></div>
+      <h1>抽卡记录（SSR 专用）｜恋与深空</h1>
+      <div style="margin-left:auto; display:flex; gap:8px">
+        <button class="btn ghost" id="exportJsonBtn">导出 JSON</button>
+        <button class="btn ghost" id="exportCsvBtn">导出 CSV</button>
+        <label class="btn ghost" for="importFile" style="cursor:pointer">导入</label>
+        <input id="importFile" type="file" accept=".json,.csv" style="display:none" />
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap grid">
+    <section class="card" aria-label="新增记录">
+      <h2>新增 SSR 记录</h2>
+      <div class="row">
+        <div>
+          <label>卡池</label>
+          <input id="banner" placeholder="如：常驻池 / 某活动名" />
+        </div>
+        <div>
+          <label>日期时间 <span class="badge">留空则使用当前时间</span></label>
+          <input id="date" type="datetime-local" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>角色</label>
+          <select id="role">
+            <option value="沈星回">沈星回</option>
+            <option value="黎深">黎深</option>
+            <option value="祁煜">祁煜</option>
+            <option value="秦彻">秦彻</option>
+            <option value="夏以昼">夏以昼</option>
+          </select>
+        </div>
+        <div>
+          <label>类型</label>
+          <select id="poolType">
+            <option value="限定">限定</option>
+            <option value="常驻">常驻</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" id="rowLimited">
+        <div>
+          <label>限定卡面名</label>
+          <input id="limitedName" placeholder="填写限定卡面名" />
+        </div>
+      </div>
+      <div class="row" id="rowPermanent" style="display:none">
+        <div>
+          <label>常驻卡名（随角色联动）</label>
+          <select id="permanentName"></select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>出金抽数</label>
+          <input id="pityBefore" type="number" min="0" placeholder="可留空" />
+        </div>
+        <div>
+          <label>备注（仅双金/三金）</label>
+          <select id="goldNote">
+            <option value="">无</option>
+            <option value="双金">双金</option>
+            <option value="三金">三金</option>
+          </select>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:10px">
+        <button class="btn primary" id="addBtn" data-testid="btn-add">添加</button>
+        <span class="hint">仅记录 SSR；数据保存在本地浏览器（localStorage）。</span>
+      </div>
+      <hr style="border-color:#1f2a44; margin:16px 0" />
+      <h2>筛选 / 搜索</h2>
+      <div class="row">
+        <div>
+          <label>卡池</label>
+          <input id="filterBanner" placeholder="输入关键字" />
+        </div>
+        <div>
+          <label>角色</label>
+          <select id="filterRole">
+            <option value="">全部</option>
+            <option>沈星回</option><option>黎深</option><option>祁煜</option><option>秦彻</option><option>夏以昼</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>类型</label>
+          <select id="filterPoolType">
+            <option value="">全部</option>
+            <option value="限定">限定</option>
+            <option value="常驻">常驻</option>
+          </select>
+        </div>
+        <div>
+          <label>起始日期</label>
+          <input id="filterFrom" type="date" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>结束日期</label>
+          <input id="filterTo" type="date" />
+        </div>
+        <div>
+          <label>关键字</label>
+          <input id="keyword" placeholder="搜索卡面/备注" />
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:10px">
+        <button class="btn" id="applyFilterBtn">应用筛选</button>
+        <button class="btn" id="clearFilterBtn">重置筛选</button>
+      </div>
+    </section>
+
+    <section class="card" aria-label="统计与列表">
+      <div class="right-head">
+        <h2>统计</h2>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px" id="stats">
+        <div><span class="muted">总 SSR 数</span><div class="pill ssr" id="statTotal">0</div></div>
+        <div><span class="muted">双金/三金 次数</span><div class="pill" id="statGold">0 / 0</div></div>
+        <div><span class="muted">限定平均抽数</span><div class="pill" id="statAvgLimited">-</div></div>
+        <div><span class="muted">SSR 平均抽数（总）</span><div class="pill" id="statAvgAll">-</div></div>
+      </div>
+
+      <h2 style="margin-top:18px">记录</h2>
+      <div class="hint" style="margin-bottom:8px">点击表头可排序；每条记录可编辑/删除。</div>
+      <div style="overflow:auto; border:1px solid #1f2a44; border-radius:12px">
+        <table id="table">
+          <thead>
+            <tr>
+              <th data-sort="date">日期</th>
+              <th data-sort="banner">卡池</th>
+              <th data-sort="role">角色</th>
+              <th data-sort="poolType">类型</th>
+              <th data-sort="cardName">卡面</th>
+              <th data-sort="pityBefore">出金抽数</th>
+              <th data-sort="goldNote">备注</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div id="empty" class="empty" style="display:none">暂无记录。先在左侧添加一条吧～</div>
+
+      <details style="margin-top:16px">
+        <summary>开发者自检（点击展开）</summary>
+        <div class="tests" id="testOutput">尚未运行测试</div>
+        <div class="toolbar" style="margin-top:8px"><button class="btn" id="runTestsBtn">运行内置测试</button></div>
+      </details>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <div class="muted">说明：
+      <ul>
+        <li>仅记录 SSR（稀有度固定为 SSR）。</li>
+        <li>常驻卡名为固定清单，会随角色自动联动。</li>
+        <li>日期时间可手动输入；留空时自动使用当前时间。</li>
+      </ul>
+    </div>
+  </footer>
+
+  <script>
+    const KEY = 'gachaLogsV2_ssrOnly';
+    const $ = (s)=>document.querySelector(s);
+    const ROLES = ['沈星回','黎深','祁煜','秦彻','夏以昼'];
+    const PERMANENT_NAMES = {
+      '沈星回': ['逐光破影','逐光迷心','流光轻跃','毛绒陷阱','时光碎片'],
+      '黎深': ['永恒心役','永恒封尘','眷眷余晖','失序','余温过午'],
+      '祁煜': ['深海醉金','深海成诺','花落未夏','闻香','隐秘日出'],
+      '秦彻': ['掠心夺味','掠心相授','飞羽向夜','无效禁锢','方寸盈余'],
+      '夏以昼': ['远空迷航','远空棠雨','无尽夏','暗潮边缘','限定余味']
+    };
+    const state = { data: [], sort: { key:'date', asc:false }, filter: { banner:'', role:'', poolType:'', from:'', to:'', keyword:'' } };
+    function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+    function load(){ try{ state.data = JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ state.data=[] } state.data.forEach(r=>{ if(!r.id) r.id = uid(); }); }
+    function save(){ localStorage.setItem(KEY, JSON.stringify(state.data)); }
+    function fmtDate(v){ if(!v) return ''; const d=new Date(v); return d.toLocaleString(); }
+    function refreshPermanentOptions(){
+      const role = $('#role').value; const list = (PERMANENT_NAMES[role]||[]).slice(); const sel = $('#permanentName'); sel.innerHTML = '';
+      if(list.length===0){ const opt=document.createElement('option'); opt.value=''; opt.textContent='（该角色暂无常驻卡）'; sel.appendChild(opt); }
+      else { for(const name of list){ const opt=document.createElement('option'); opt.value=name; opt.textContent=name; sel.appendChild(opt); } }
+    }
+    function sortRows(rows){
+      const {key,asc} = state.sort; const dir = asc? 1 : -1;
+      return rows.sort((a,b)=>{ const va=a[key], vb=b[key];
+        if(key==='date') return (new Date(va) - new Date(vb)) * dir;
+        if(key==='pityBefore') return ((+va||0) - (+vb||0)) * dir;
+        return String(va||'').localeCompare(String(vb||'')) * dir;
+      });
+    }
+    function render(){
+      let rows = state.data.slice();
+      const f = state.filter;
+      if(f.banner) rows = rows.filter(r=> (r.banner||'').toLowerCase().includes(f.banner.toLowerCase()));
+      if(f.role) rows = rows.filter(r=> r.role===f.role);
+      if(f.poolType) rows = rows.filter(r=> r.poolType===f.poolType);
+      if(f.from) rows = rows.filter(r=> new Date(r.date)>= new Date(f.from));
+      if(f.to){ const end = new Date(f.to); end.setDate(end.getDate()+1); rows = rows.filter(r=> new Date(r.date)< end); }
+      if(f.keyword){ const kw=f.keyword.toLowerCase(); rows = rows.filter(r=> [r.cardName, r.goldNote].some(x=> (x||'').toLowerCase().includes(kw))); }
+      rows = sortRows(rows);
+      const tbody = $('#tbody'); tbody.innerHTML = ''; $('#empty').style.display = rows.length? 'none' : 'block';
+      for(const r of rows){
+        const tr=document.createElement('tr');
+        tr.innerHTML = `
+          <td>${fmtDate(r.date)}</td>
+          <td>${escapeHtml(r.banner)}</td>
+          <td>${escapeHtml(r.role)}</td>
+          <td>${escapeHtml(r.poolType)}</td>
+          <td>${escapeHtml(r.cardName||'')}</td>
+          <td>${Number.isFinite(+r.pityBefore)? +r.pityBefore : ''}</td>
+          <td>${escapeHtml(r.goldNote||'')}</td>
+          <td>
+            <button class="btn" data-edit="${r.id}">编辑</button>
+            <button class="btn danger" data-del="${r.id}">删除</button>
+          </td>`;
+        tbody.appendChild(tr);
+      }
+      const all = state.data.filter(r=> Number.isFinite(+r.pityBefore));
+      const limited = all.filter(r=> r.poolType==='限定');
+      const avg = (arr)=> arr.length? (arr.reduce((s,x)=> s + (+x.pityBefore), 0) / arr.length).toFixed(1) : '-';
+      $('#statTotal').textContent = String(state.data.length);
+      $('#statAvgLimited').textContent = String(avg(limited));
+      $('#statAvgAll').textContent = String(avg(all));
+      const doubleGold = state.data.filter(r=> r.goldNote==='双金').length;
+      const tripleGold = state.data.filter(r=> r.goldNote==='三金').length;
+      $('#statGold').textContent = `${doubleGold} / ${tripleGold}`;
+    }
+    function escapeHtml(s){ return (s||'').replace(/[&<>\"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+    function toCsv(rows, headers){ const hs = headers || Object.keys(rows[0]||{}); const esc = (v)=>`"${String(v??'').replace(/\"/g,'\"\"').replace(/\r?\n/g,'\\n')}"`; const lines = [hs.join(',')]; for(const r of rows){ lines.push(hs.map(h=>esc(r[h])).join(',')); } return lines.join('\n'); }
+    function parseCsv(text){
+      const out = []; const s = String(text||''); let i=0, field='', row=[], inQuotes=false;
+      const pushField=()=>{ row.push(field); field=''; };
+      const pushRow=(headers)=>{ if(!headers){ headers = out.headers; } const obj={}; headers.forEach((h,idx)=> obj[h]= (row[idx]||'').replace(/\\n/g,'\n')); out.push(obj); row=[]; };
+      const headers = []; let headersDone = false; inQuotes=false; field=''; row=[];
+      while(i < s.length){
+        const c = s[i++]; if(!headersDone){
+          if(inQuotes){ if(c=='"'){ if(s[i]=='"'){ field+='"'; i++; } else { inQuotes=false; } } else { field+=c; } }
+          else { if(c=='"'){ inQuotes=true; } else if(c==','){ headers.push(field); field=''; } else if(c=='\n'){ headers.push(field); field=''; headersDone=true; out.headers=headers; break; } else if(c=='\r'){ } else { field+=c; } }
+        } else { break; }
+      }
+      if(!headersDone){ out.headers = [field]; return out; }
+      field=''; inQuotes=false; row=[];
+      while(i < s.length){
+        const c = s[i++]; if(inQuotes){ if(c=='"'){ if(s[i]=='"'){ field+='"'; i++; } else { inQuotes=false; } } else { field+=c; } }
+        else { if(c=='"'){ inQuotes=true; } else if(c==','){ pushField(); } else if(c=='\n'){ pushField(); pushRow(); } else if(c=='\r'){ } else { field+=c; } }
+      }
+      if(field or row):  # noqa
+          pushField(); pushRow();
+      return out;
+    }
+    function addRecord(){
+      const banner=$('#banner').value.trim();
+      const dateStr=$('#date').value.trim();
+      const date = dateStr ? new Date(dateStr).toISOString() : new Date().toISOString();
+      const role=$('#role').value;
+      const poolType=$('#poolType').value;
+      const cardName = poolType==='常驻' ? $('#permanentName').value : $('#limitedName').value.trim();
+      const pityStr=$('#pityBefore').value.trim();
+      const pityBefore=pityStr===''? null : Math.max(0, Number(pityStr));
+      const goldNote=$('#goldNote').value;
+      if(!banner){ alert('请填写卡池'); return; }
+      if(poolType==='常驻' && !cardName){ alert('请选择常驻卡名'); return; }
+      if(poolType==='限定' && !cardName){ alert('请填写限定卡面名'); return; }
+      const rec={ id:uid(), banner, date, role, poolType, cardName, pityBefore, goldNote, rarity:'SSR' };
+      state.data.push(rec);
+      save(); render();
+    }
+    function openEditor(id){
+      const r = state.data.find(x=>x.id===id); if(!r) return;
+      const banner = prompt('卡池', r.banner); if(banner===null) return;
+      const date = prompt('日期时间（ISO 或可解析格式）', r.date);
+      const role = prompt('角色（沈星回/黎深/祁煜/秦彻/夏以昼）', r.role);
+      const poolType = prompt('类型（限定/常驻）', r.poolType);
+      const cardName = prompt('卡面名', r.cardName);
+      const pityBefore = prompt('出金抽数（留空则不改变）', r.pityBefore??'');
+      const goldNote = prompt('备注（双金/三金/留空）', r.goldNote||'');
+      Object.assign(r,{ banner, date, role, poolType, cardName, pityBefore: pityBefore===''? r.pityBefore : Number(pityBefore), goldNote });
+      save(); render();
+    }
+    function mergeById(oldArr, newArr){ const map=new Map(oldArr.map(x=>[x.id,x])); for(const n of newArr){ map.set(n.id, n); } return Array.from(map.values()); }
+    function bindEvents(){
+      document.addEventListener('click', (e)=>{
+        const th = e.target.closest('th[data-sort]');
+        if(th){ const k=th.getAttribute('data-sort'); if(state.sort.key===k){ state.sort.asc=!state.sort.asc; } else { state.sort={key:k,asc:false}; } render(); }
+        const editId = e.target.getAttribute && e.target.getAttribute('data-edit');
+        const delId = e.target.getAttribute && e.target.getAttribute('data-del');
+        if(editId){ openEditor(editId); }
+        if(delId){ if(confirm('确定删除这条记录吗？')){ state.data = state.data.filter(r=> r.id!==delId); save(); render(); } }
+      });
+      $('#applyFilterBtn').addEventListener('click', ()=>{ state.filter.banner = $('#filterBanner').value.trim(); state.filter.role = $('#filterRole').value; state.filter.poolType = $('#filterPoolType').value; state.filter.from = $('#filterFrom').value; state.filter.to = $('#filterTo').value; state.filter.keyword = $('#keyword').value.trim(); render(); });
+      $('#clearFilterBtn').addEventListener('click', ()=>{ ['filterBanner','filterRole','filterPoolType','filterFrom','filterTo','keyword'].forEach(id=> $('#'+id).value=''); state.filter={ banner:'', role:'', poolType:'', from:'', to:'', keyword:'' }; render(); });
+      $('#poolType').addEventListener('change', ()=>{ const type=$('#poolType').value; $('#rowLimited').style.display = (type==='限定') ? 'flex':'none'; $('#rowPermanent').style.display = (type==='常驻') ? 'flex':'none'; if(type==='常驻') refreshPermanentOptions(); });
+      $('#role').addEventListener('change', ()=>{ if($('#poolType').value==='常驻') refreshPermanentOptions(); });
+      $('#exportJsonBtn').addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify(state.data, null, 2)], {type:'application/json;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='gacha_ssr_logs.json'; a.click(); URL.revokeObjectURL(a.href); });
+      $('#exportCsvBtn').addEventListener('click', ()=>{ const headers=['id','date','banner','role','poolType','cardName','pityBefore','goldNote','rarity']; const csv = toCsv(state.data, headers); const blob = new Blob([csv], {type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='gacha_ssr_logs.csv'; a.click(); URL.revokeObjectURL(a.href); });
+      $('#importFile').addEventListener('change', async (e)=>{ const file=e.target.files[0]; if(!file) return; const text=await file.text(); try{ let arr=[]; if(file.name.endswith('.json')){ arr=JSON.parse(text); } else { const rows = parseCsv(text); arr = rows.map(r=>r); } if(!Array.isArray(arr)) throw new Error('数据格式应为数组'); arr = arr.map(r=>({ id: r.id || uid(), date: r.date ? new Date(r.date).toISOString() : new Date().toISOString(), banner: r.banner||'', role: ROLES.includes(r.role)? r.role : (r.role||''), poolType: (r.poolType==='常驻'||r.poolType==='限定')? r.poolType : '限定', cardName: r.cardName||'', pityBefore: (r.pityBefore===''||r.pityBefore==null)? null : Number(r.pityBefore), goldNote: (r.goldNote==='双金'||r.goldNote==='三金')? r.goldNote : '', rarity:'SSR' })); state.data = mergeById(state.data, arr); save(); render(); alert('导入完成'); }catch(err){ alert('导入失败：'+err.message); } e.target.value=''; });
+      document.querySelector('[data-testid="btn-add"]').addEventListener('click', addRecord);
+      document.getElementById('runTestsBtn').addEventListener('click', runTests);
+    }
+    function runTests(){
+      const out=[]; const ok=(name)=>out.push(`✅ ${name}`); const bad=(name,err)=>out.push(`❌ ${name}: ${err}`);
+      try{
+        const headers=['id','date','banner','role','poolType','cardName','pityBefore','goldNote','rarity'];
+        const sample=[{id:'1',date:'2024-01-01T00:00:00.000Z',banner:'常驻池',role:'黎深',poolType:'常驻',cardName:'永恒心役',pityBefore:79,goldNote:'',rarity:'SSR'},{id:'2',date:'2024-02-01T00:00:00.000Z',banner:'限定·测试',role:'秦彻',poolType:'限定',cardName:'天光测试',pityBefore:20,goldNote:'双金',rarity:'SSR'}];
+        const csv=toCsv(sample,headers);
+        if(/\n/.test(csv) && !/\r\n/.test(csv)) ok('CSV 换行使用 \\n'); else bad('CSV 换行', '未使用标准换行');
+        const parsed=parseCsv(csv);
+        if(parsed.length===2 && parsed[0].role==='黎深' && parsed[1].goldNote==='双金') ok('CSV 解析往返一致'); else bad('CSV 解析', JSON.stringify(parsed));
+      }catch(e){ bad('CSV 工具测试', e.message); }
+      try{
+        document.getElementById('poolType').value='常驻';
+        document.getElementById('poolType').dispatchEvent(new Event('change'));
+        const visible = getComputedStyle(document.getElementById('rowPermanent')).display !== 'none';
+        const hasOptions = document.getElementById('permanentName').options.length>=1;
+        if(visible && hasOptions) ok('常驻切换显示与选项'); else bad('常驻切换', `visible=${visible}, options=${document.getElementById('permanentName').options.length}`);
+      }catch(e){ bad('常驻联动测试', e.message); }
+      try{
+        const before=state.data.length;
+        document.getElementById('banner').value='常驻池';
+        document.getElementById('role').value='黎深';
+        document.getElementById('poolType').value='常驻';
+        document.getElementById('poolType').dispatchEvent(new Event('change'));
+        document.getElementById('permanentName').selectedIndex=0;
+        document.querySelector('[data-testid="btn-add"]').click();
+        if(state.data.length===before+1) ok('添加记录成功'); else bad('添加记录', `len=${state.data.length}, before=${before}`);
+      }catch(e){ bad('添加记录测试', e.message); }
+      document.getElementById('testOutput').textContent = out.join('\n');
+    }
+    window.addEventListener('DOMContentLoaded', ()=>{
+      load(); refreshPermanentOptions(); render(); bindEvents();
+      if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+    });
+  </script>
+</body>
+</html>
