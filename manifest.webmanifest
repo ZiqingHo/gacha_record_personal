@@ -1,6 +1,6 @@
 {
-  "name": "恋与深空 SSR 抽卡记录器",
-  "short_name": "LLSK 抽卡",
+  "name": "恋与深空 抽卡记录器",
+  "short_name": "LYSK 抽卡",
   "start_url": "gacha_record.html",
   "display": "standalone",
   "background_color": "#0f1115",
