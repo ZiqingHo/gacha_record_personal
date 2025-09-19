@@ -201,7 +201,7 @@ input[type="datetime-local"]::-webkit-datetime-edit{
       <button class="btn primary" id="exportJsonBtn">导出 JSON</button>
       <button class="btn primary" id="exportCsvBtn">导出 CSV</button>
       <button class="btn primary" id="exportExcelBtn">导出 Excel</button>
-      <input class="file" type="file" id="importFile" accept=".json,.csv" />
+      <input class="file" type="file" id="importFile" accept=".json,.csv" multiple />
       <button class="btn" id="importBtn">导入 JSON/CSV</button>
       <button class="btn ghost" id="clearAllBtn" title="仅清空本地缓存">清空本地（慎用）</button>
     </div>
@@ -481,11 +481,80 @@ function tdOpsL(label, r){
     function csvEscapeNewlines(v){ return String(v).replace(/\r\n|\r|\n/g, '\\n'); }
     function csvEscape(v){ const s=String(v); return /[",\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s; }
     function isLikelyJSON(text){ const t=text.trim(); return ((t.startsWith('[')||t.startsWith('{')) && /[\{\}\[\]:]/.test(t)); }
-    function onImportFile(e){
-      const file=e.target.files?.[0]; if(!file) return; const reader=new FileReader();
-      reader.onload=()=>{ try{ const text=String(reader.result||''); let imported=[]; if(file.name.toLowerCase().endsWith('.json') || isLikelyJSON(text)){ imported=importFromJSON(text); } else { imported=importFromCSV(text); } if(imported.length===0){ alert('未解析到有效记录'); importFile.value=''; return; } const map=new Map(records.map(r=>[r.id,r])); for(const r of imported){ if(!r.id) r.id=uid(); r.pulls=coercePulls(r.pulls); map.set(r.id, { ...map.get(r.id), ...r }); } records=[...map.values()]; saveRecords(); render(); alert(`导入完成，共合并 ${imported.length} 条记录。`);} catch(err){ console.error(err); alert('导入失败：'+err.message); } finally{ importFile.value=''; } };
-      reader.readAsText(file, 'utf-8');
+    // 读取文件为文本（Promise 版）
+function readFileAsText(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = reject;
+    reader.readAsText(file, 'utf-8');
+  });
+}
+
+// 生成“内容签名”，用于无 id 的去重（到分钟粒度）
+function signature(rec){
+  const dt = (rec.date || '').toString().slice(0,16); // yyyy-MM-ddTHH:mm
+  const pulls = (typeof rec.pulls === 'number') ? rec.pulls : '';
+  return [dt, rec.pool||'', rec.role||'', rec.type||'', rec.cardName||'', pulls, rec.remark||''].join('§');
+}
+
+async function onImportFile(e){
+  const files = Array.from(e.target.files || []);
+  if (files.length === 0) return;
+
+  try{
+    // 读所有文件
+    const texts = await Promise.all(files.map(readFileAsText));
+    let importedAll = [];
+
+    // 逐个文件解析
+    for (let i = 0; i < files.length; i++){
+      const file = files[i];
+      const text = texts[i];
+      let arr = [];
+      if (file.name.toLowerCase().endsWith('.json') || isLikelyJSON(text)){
+        arr = importFromJSON(text);
+      }else{
+        arr = importFromCSV(text);
+      }
+      importedAll.push(...arr);
     }
+
+    if (importedAll.length === 0){
+      alert('未解析到有效记录');
+      return;
+    }
+
+    // 合并：先按 id 去重，再对没有 id 的用“内容签名”去重
+    const map = new Map(records.map(r => [r.id, r]));
+    const sigSet = new Set(records.map(signature));
+
+    for (const r of importedAll){
+      r.pulls = coercePulls(r.pulls);
+
+      if (r.id){ // 有 id：用 id 合并
+        map.set(r.id, { ...map.get(r.id), ...r });
+        sigSet.add(signature(r));
+      }else{     // 无 id：用内容签名避免重复
+        const sig = signature(r);
+        if (sigSet.has(sig)) continue; // 跳过重复
+        r.id = uid();                  // 给它生成一个 id
+        map.set(r.id, r);
+        sigSet.add(sig);
+      }
+    }
+
+    records = [...map.values()];
+    saveRecords(); render();
+    alert(`导入完成：读取 ${files.length} 个文件，合并 ${importedAll.length} 条记录。`);
+  }catch(err){
+    console.error(err);
+    alert('导入失败：' + err.message);
+  }finally{
+    e.target.value = ''; // 清空选择，便于下次继续导入
+  }
+}
+
     function importFromJSON(text){ const arr=JSON.parse(text); if(Array.isArray(arr)) return sanitizeImportedArray(arr); if(arr && Array.isArray(arr.records)) return sanitizeImportedArray(arr.records); return []; }
     function importFromCSV(text){ const rows=parseCSV(text); if(rows.length===0) return []; const header=rows[0].map(h=>h.trim()); const idx=(names)=>{ for(const name of names){ const i=header.indexOf(name); if(i>=0) return i; } return -1; }; const i_id=idx(['id','ID']); const i_date=idx(['日期','date']); const i_pool=idx(['卡池','pool']); const i_role=idx(['角色','role']); const i_type=idx(['类型','type']); const i_card=idx(['卡面','cardName','card']); const i_pulls=idx(['出金抽数','pulls']); const i_remark=idx(['备注','remark']); const list=[]; for(let r=1; r<rows.length; r++){ const line=rows[r]; if(line.length===1 && line[0].trim()==='') continue; const rec={ id: i_id>=0 ? line[i_id].trim() : uid(), date: i_date>=0 ? revertEscapedNewlines(line[i_date].trim()) : toLocalDatetimeStr(new Date()), pool: i_pool>=0 ? revertEscapedNewlines(line[i_pool].trim()) : '', role: i_role>=0 ? line[i_role].trim() : '', type: i_type>=0 ? line[i_type].trim() : '', cardName: i_card>=0 ? revertEscapedNewlines(line[i_card].trim()) : '', pulls: i_pulls>=0 ? parseMaybeNumber(line[i_pulls].trim()) : null, remark: i_remark>=0 ? line[i_remark].trim() : '无', }; list.push(rec);} return sanitizeImportedArray(list); }
     function sanitizeImportedArray(arr){ const out=[]; for(const r of arr){ if(!r) continue; const clean={ id:(r.id||'').toString()||uid(), date:(r.date||r.datetime||'').toString()||toLocalDatetimeStr(new Date()), pool:(r.pool||r.池子||r.卡池||'').toString(), role:(r.role||r.角色||'').toString(), type:(r.type||r.类型||'').toString(), cardName:(r.cardName||r.卡面||'').toString(), pulls:r.pulls ?? r.抽数 ?? r.出金抽数 ?? null, remark:(r.remark||r.备注||'无').toString(), }; clean.pulls=coercePulls(clean.pulls); out.push(clean);} return out; }
