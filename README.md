@@ -1,4 +1,4 @@
-# 深空抽卡 PWA（GitHub Pages 部署）
+# 深空抽卡 PWA
 
 ## 部署步骤
 1. 在 GitHub 新建一个仓库。
