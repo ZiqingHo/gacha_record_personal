@@ -102,7 +102,62 @@
     .file{ display:none; }
     .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:#0d1220; border:1px solid var(--border); padding:2px 6px; border-radius:6px; font-size:12px; }
     .muted{color:var(--muted);font-size:12px}
-  </style>
+
+    @media (max-width: 768px){
+    header{ padding:16px 12px 4px; }
+    .container{ padding:0 12px 16px; }
+    .card .body{ padding:12px; }
+    .title h1{ font-size:18px; }
+    .title .app-icon{ width:36px; height:36px; border-radius:10px; }
+    .btn{ padding:8px 12px; font-size:13px; border-radius:10px; }
+    .row{ grid-template-columns: 1fr; }      
+    .statgrid{ grid-template-columns: repeat(2, 1fr); }
+    input[type="text"], input[type="datetime-local"], input[type="date"], select, textarea{
+      font-size:16px;                         
+    }
+  }
+  @media (max-width: 420px){
+  .statgrid{ grid-template-columns: 1fr; }
+  .title h1{ font-size:16px; }
+  }
+
+  @media (max-width: 768px){
+  .tablewrap{ border: none; }
+  table{ min-width: unset; border-collapse: separate; border-spacing: 0 8px; }
+  thead{ display:none; }
+  tbody tr{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    padding: 10px;
+    background: var(--chip);
+    border:1px solid var(--border);
+    border-radius: 12px;
+  }
+  tbody td{
+    border:0;
+    padding: 4px 6px;
+  }
+  tbody td::before{
+    content: attr(data-label);
+    display:block;
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:3px;
+  }
+  tbody td.actions{
+    grid-column: 1 / -1;
+    margin-top: 2px;
+  }
+  .role-pill{ padding:2px 8px; }
+}
+body{
+  padding-bottom: env(safe-area-inset-bottom);
+}
+header{
+  padding-top: calc(24px + env(safe-area-inset-top));
+}
+</style>
 </head>
 <body>
   <header>
@@ -314,29 +369,61 @@
       statAvgLimited.textContent = avgLimited===null?'-':avgLimited.toFixed(2);
       statAvgAll.textContent = avgAll===null?'-':avgAll.toFixed(2);
     }
-    function renderTable(filtered){
-      const rows=sortRows(filtered);
-      recordTbody.innerHTML='';
-      for(const r of rows){
-        const tr=document.createElement('tr');
-        const tdDate=tdText(formatDisplayDate(r.date));
-        const tdPool=tdText(r.pool||'');
-        const tdRole=document.createElement('td'); tdRole.appendChild(rolePill(r.role));
-        const tdType=tdText(r.type||'');
-        const tdCard=tdText(r.cardName||'');
-        const tdPulls=tdText(typeof r.pulls==='number'? r.pulls : '');
-        const tdRemark=tdText(r.remark||'');
-        const tdOps=document.createElement('td');
-        const editBtn=btnOp('编辑',()=>editRecord(r.id));
-        const delBtn=btnOp('删除',()=>deleteRecord(r.id));
-        tdOps.append(editBtn, delBtn);
-        tr.append(tdDate, tdPool, tdRole, tdType, tdCard, tdPulls, tdRemark, tdOps);
-        recordTbody.appendChild(tr);
-      }
-      table.querySelectorAll('th[data-key]').forEach(th=>{
-        const k=th.getAttribute('data-key'); th.textContent=th.textContent.replace(/[\s▲▼]*$/,''); if(k===sortState.key){ th.textContent += sortState.dir==='asc'?' ▲':' ▼'; }
-      });
+ function renderTable(filtered){
+  const rows = sortRows(filtered);
+  recordTbody.innerHTML = '';
+  for (const r of rows){
+    const tr = document.createElement('tr');
+    tr.append(
+      tdL('日期', formatDisplayDate(r.date)),
+      tdL('卡池', r.pool || ''),
+      tdRoleL('角色', r.role),
+      tdL('类型', r.type || ''),
+      tdL('卡面', r.cardName || ''),
+      tdL('出金抽数', (typeof r.pulls === 'number' ? r.pulls : '')),
+      tdL('备注', r.remark || ''),
+      tdOpsL('操作', r)
+    );
+    recordTbody.appendChild(tr);
+  }
+
+  // 更新表头箭头（桌面端可见）
+  table.querySelectorAll('th[data-key]').forEach(th=>{
+    const k = th.getAttribute('data-key');
+    th.textContent = th.textContent.replace(/[\s▲▼]*$/,'');
+    if (k === sortState.key){
+      th.textContent += sortState.dir==='asc' ? ' ▲' : ' ▼';
     }
+  });
+}
+
+// 普通文本单元格（会带 data-label，供移动端显示小标签）
+function tdL(label, text){
+  const td = document.createElement('td');
+  td.setAttribute('data-label', label);
+  td.textContent = text;
+  return td;
+}
+
+// 角色胶囊单元格
+function tdRoleL(label, role){
+  const td = document.createElement('td');
+  td.setAttribute('data-label', label);
+  td.appendChild(rolePill(role));
+  return td;
+}
+
+// 操作按钮单元格
+function tdOpsL(label, r){
+  const td = document.createElement('td');
+  td.className = 'actions';
+  td.setAttribute('data-label', label);
+  const editBtn = btnOp('编辑', ()=> editRecord(r.id));
+  const delBtn  = btnOp('删除', ()=> deleteRecord(r.id));
+  td.append(editBtn, delBtn);
+  return td;
+}
+
     function tdText(txt){ const td=document.createElement('td'); td.textContent=txt; return td; }
     function btnOp(label, handler){ const b=document.createElement('button'); b.className='op-btn'; b.textContent=label; b.addEventListener('click', handler); return b; }
     function rolePill(role){ const span=document.createElement('span'); span.className=`role-pill ${roleClass(role)}`; const dot=document.createElement('i'); dot.className='dot'; const text=document.createElement('span'); text.textContent=role||''; span.append(dot,text); return span; }
