@@ -11,33 +11,22 @@
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <style>
     :root{
-      --bg:#0f1115;
-      --panel:#151923;
-      --panel-2:#1b2130;
-      --muted:#8a93a6;
-      --text:#e6e9f2;
-      --accent:#7aa2f7;
-      --accent-2:#a78bfa;
-      --danger:#ef4444;
-      --ok:#22c55e;
-      --role-shen:#c7b3ff;
-      --role-li:#60a5fa;
-      --role-qi:#f9a8d4;
-      --role-qin:#ef4444;
-      --role-xia:#fb923c;
-      --border:#242b3a;
-      --chip:#232a3b;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --radius:16px;
-    }
+  --bg-base: #0f1115;
+  --g1: 122,162,247; 
+  --g1a: .22;        
+  --g2: 167,139,250;  
+  --g2a: .16;      
+}
+
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;
       font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", Arial, "Helvetica Neue", Helvetica, "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 600px at 80% -10%, rgba(122,162,247,.2), transparent 60%),
-                  radial-gradient(900px 500px at -10% 110%, rgba(167,139,250,.15), transparent 50%),
-                  var(--bg);
+      background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(var(--g1), var(--g1a)), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%,  rgba(var(--g2), var(--g2a)), transparent 50%),
+    var(--bg-base);
       color:var(--text);
     }
     header{ padding:24px 20px 8px; }
@@ -183,10 +172,44 @@ input[type="datetime-local"]::-webkit-datetime-edit{
     font-size: 16px;
   }
 }
+/* 1) 蓝紫（默认） */
+.theme-aurora {
+  --bg-base: #0f1115;
+  --g1: 122,162,247; --g1a: .22;  /* 蓝 */
+  --g2: 167,139,250; --g2a: .16;  /* 紫 */
+}
+
+/* 2) 暖日落：橙 → 粉（更活泼） */
+.theme-sunset {
+  --bg-base: #101012;
+  --g1: 251,146,60;  --g1a: .18;  /* 橙 #fb923c */
+  --g2: 244,114,182; --g2a: .14;  /* 粉 #f472b6 */
+}
+
+/* 3) 青绿赛博：青 → 绿（清爽） */
+.theme-emerald {
+  --bg-base: #0d1312;
+  --g1: 45,212,191;  --g1a: .18;  /* 青 #2dd4bf */
+  --g2: 34,197,94;   --g2a: .14;  /* 绿 #22c55e */
+}
+
+/* 4) 玫瑰暮色：玫红 → 紫（偏浪漫） */
+.theme-rose {
+  --bg-base: #120f12;
+  --g1: 244,63,94;   --g1a: .18;  /* 玫红 #f43f5e */
+  --g2: 168,85,247;  --g2a: .14;  /* 紫 #a855f7 */
+}
+
+/* 5) 深海霓虹：蓝 → 青（冷淡科技） */
+.theme-neon {
+  --bg-base: #0b0f16;
+  --g1: 59,130,246;  --g1a: .20;  /* 蓝 #3b82f6 */
+  --g2: 56,189,248;  --g2a: .16;  /* 青 #38bdf8 */
+}
 
 </style>
 </head>
-<body>
+<body class="theme-aurora">
   <header>
     <div class="title">
       <div class="app-icon" aria-label="应用图标">
