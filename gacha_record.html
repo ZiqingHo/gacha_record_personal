@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>《恋与深空》SSR 抽卡记录器</title>
+  <title>「恋与深空」SSR 抽卡记录器</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0f1115">
   <link rel="manifest" href="manifest.webmanifest">
@@ -126,7 +126,7 @@
       <div class="body">
         <h2>新增记录</h2>
         <div class="formgrid">
-          <div><label>卡池（必填）</label><input type="text" id="poolInput" placeholder="如：沈星回·限定卡池"></div>
+          <div><label>卡池</label><input type="text" id="poolInput" placeholder="如：沈星回·限定卡池"></div>
           <div><label>日期时间（可选）</label><input type="datetime-local" id="datetimeInput"><div class="hint">留空将自动填入当前时间</div></div>
           <div class="row">
             <div><label>角色</label><select id="roleSelect"><option>沈星回</option><option>黎深</option><option>祁煜</option><option>秦彻</option><option>夏以昼</option></select></div>
@@ -135,7 +135,7 @@
           <div id="limitedWrapper"><label>限定卡面名</label><input type="text" id="limitedNameInput" placeholder="如：繁星献礼"></div>
           <div id="permanentWrapper" style="display:none"><label>常驻卡名</label><select id="permanentNameSelect"></select></div>
           <div class="row">
-            <div><label>出金抽数（1–70，必填）</label><input type="text" id="pullsInput" placeholder="整数 1-70"></div>
+            <div><label>出金抽数</label><input type="text" id="pullsInput" placeholder="整数 1-70"></div>
             <div><label>备注</label><select id="remarkSelect"><option>无</option><option>双金</option><option>三金</option></select></div>
           </div>
           <div class="chips"><button class="btn primary" id="addBtn">添加记录</button><span class="hint">数据保存在浏览器 <span class="kbd">localStorage</span>。</span></div>
