@@ -215,9 +215,9 @@ input[type="datetime-local"]::-webkit-datetime-edit{
           <div><label>日期时间（可选）</label><input type="datetime-local" id="datetimeInput"><div class="hint">留空将自动填入当前时间</div></div>
           <div class="row">
             <div><label>角色</label><select id="roleSelect"><option>夏以昼</option><option>秦彻</option><option>祁煜</option><option>黎深</option><option>沈星回</option></select></div>
-            <div><label>类型</label><select id="typeSelect"><option>限定</option><option>常驻</option></select></div>
+            <div><label>类型</label><select id="typeSelect"><option>限定</option><option>复刻</option><option>常驻</option></select></div>
           </div>
-          <div id="limitedWrapper"><label>限定卡面名</label><input type="text" id="limitedNameInput" placeholder="如：无可逃逸夜"></div>
+          <div id="limitedWrapper"><label>限定卡名</label><input type="text" id="limitedNameInput" placeholder="如：无可逃逸夜"></div>
           <div id="permanentWrapper" style="display:none"><label>常驻卡名</label><select id="permanentNameSelect"></select></div>
           <div class="row">
             <div><label>出金抽数</label><input type="text" id="pullsInput" placeholder="整数 1-70"></div>
@@ -230,7 +230,7 @@ input[type="datetime-local"]::-webkit-datetime-edit{
         <div class="formgrid">
           <div><label>卡池关键字</label><input type="text" id="filterPoolKw" placeholder="按卡池名称模糊匹配"></div>
           <div><label>角色</label><select id="filterRole"><option value="全部">全部</option><option>沈星回</option><option>黎深</option><option>祁煜</option><option>秦彻</option><option>夏以昼</option></select></div>
-          <div><label>类型</label><select id="filterType"><option value="全部">全部</option><option>限定</option><option>常驻</option></select></div>
+          <div><label>类型</label><select id="filterType"><option value="全部">全部</option><option>限定</option><option>复刻</option><option>常驻</option></select></div>
           <div><label>起始日期</label><input type="date" id="filterFrom"></div>
           <div><label>结束日期</label><input type="date" id="filterTo"></div>
           <div><label>卡面/备注关键字</label><input type="text" id="filterKeyword" placeholder="在卡面名与备注中模糊匹配"></div>
@@ -325,11 +325,17 @@ input[type="datetime-local"]::-webkit-datetime-edit{
     fillPermanentOptions(roleSelect.value);
     render();
     roleSelect.addEventListener('change', () => { if (typeSelect.value === '常驻') fillPermanentOptions(roleSelect.value); });
-    typeSelect.addEventListener('change', () => {
-      const t = typeSelect.value;
-      if (t === '限定'){ limitedWrapper.style.display = ''; permanentWrapper.style.display = 'none'; }
-      else { limitedWrapper.style.display = 'none'; permanentWrapper.style.display = ''; fillPermanentOptions(roleSelect.value); }
+    typeSelect.addEventListener('change', () => { const t = typeSelect.value;
+      if (t === '常驻') {
+        limitedWrapper.style.display = 'none';
+        permanentWrapper.style.display = '';
+        fillPermanentOptions(roleSelect.value);
+      } else {
+        limitedWrapper.style.display = '';
+        permanentWrapper.style.display = 'none';
+      }
     });
+
     addBtn.addEventListener('click', onAdd);
     exportJsonBtn.addEventListener('click', exportJSON);
     exportCsvBtn.addEventListener('click', exportCSV);
@@ -351,7 +357,8 @@ input[type="datetime-local"]::-webkit-datetime-edit{
     function onAdd(){
       const pool=poolInput.value.trim(); if(!pool){ alert('请填写【卡池】'); return; }
       const role=roleSelect.value; const type=typeSelect.value;
-      let cardName = type==='限定' ? (limitedNameInput.value||'').trim() : (permanentNameSelect.value||'');
+      const cardName = (type === '常驻') ? (permanentNameSelect.value || ''): (limitedNameInput.value || '').trim(); // 限定/复刻都走这里
+
       const pulls=coercePulls(pullsInput.value.trim()); if(pulls===null){ alert('【出金抽数】需为 1–70 的整数'); return; }
       const remark=remarkSelect.value;
       let dt=datetimeInput.value; if(!dt){ dt=toLocalDatetimeStr(new Date()); }
@@ -386,19 +393,26 @@ input[type="datetime-local"]::-webkit-datetime-edit{
       });
     }
     function renderStats(filtered){
-      const limitedCount = filtered.filter(r=>r.type==='限定').length;
-      const permCount    = filtered.filter(r=>r.type==='常驻').length;
-      const dCount = filtered.filter(r=>r.remark==='双金').length;
-      const tCount = filtered.filter(r=>r.remark==='三金').length;
-      const limitedPulls = filtered.filter(r=>r.type==='限定' && typeof r.pulls==='number');
-      const allPulls     = filtered.filter(r=> typeof r.pulls==='number');
-      const avgLimited   = limitedPulls.length ? (limitedPulls.reduce((s,r)=>s+r.pulls,0)/limitedPulls.length) : null;
-      const avgAll       = allPulls.length ? (allPulls.reduce((s,r)=>s+r.pulls,0)/allPulls.length) : null;
-      statTotal.textContent = `${limitedCount}/${permCount}`;
-      statMulti.textContent = `${dCount}/${tCount}`;
-      statAvgLimited.textContent = avgLimited===null?'-':avgLimited.toFixed(2);
-      statAvgAll.textContent = avgAll===null?'-':avgAll.toFixed(2);
-    }
+  const isLimitedLike = r => r.type === '限定' || r.type === '复刻';
+
+  const limitedCount = filtered.filter(isLimitedLike).length;
+  const permCount    = filtered.filter(r => r.type === '常驻').length;
+
+  const dCount = filtered.filter(r => r.remark === '双金').length;
+  const tCount = filtered.filter(r => r.remark === '三金').length;
+
+  const limitedPulls = filtered.filter(r => isLimitedLike(r) && typeof r.pulls === 'number');
+  const allPulls     = filtered.filter(r => typeof r.pulls === 'number');
+
+  const avgLimited   = limitedPulls.length ? (limitedPulls.reduce((s,r)=>s+r.pulls,0)/limitedPulls.length) : null;
+  const avgAll       = allPulls.length ? (allPulls.reduce((s,r)=>s+r.pulls,0)/allPulls.length) : null;
+
+  statTotal.textContent      = `${limitedCount}/${permCount}`;  // 限定(含复刻)/常驻
+  statMulti.textContent      = `${dCount}/${tCount}`;
+  statAvgLimited.textContent = avgLimited === null ? '-' : avgLimited.toFixed(2);
+  statAvgAll.textContent     = avgAll === null ? '-' : avgAll.toFixed(2);
+}
+
  function renderTable(filtered){
   const rows = sortRows(filtered);
   recordTbody.innerHTML = '';
@@ -464,10 +478,12 @@ function tdOpsL(label, r){
       let date=p('日期时间（yyyy-MM-ddTHH:mm）', r.date); if(!date) date=r.date;
       let pool=p('卡池', r.pool); if(!pool){ alert('卡池不能为空'); return; }
       let role=p('角色（沈星回/黎深/祁煜/秦彻/夏以昼）', r.role); if(!ROLE_COLORS[role]){ alert('角色输入不合法'); return; }
-      let type=p('类型（限定/常驻）', r.type); if(!(type==='限定'||type==='常驻')){ alert('类型需为“限定”或“常驻”'); return; }
-      let cardName=r.cardName;
-      if(type==='限定'){ cardName=p('限定卡面名', r.cardName||'') || ''; }
-      else{ const options=(PERMANENT_MAP[role]||[]).join('、'); cardName=p(`常驻卡名（可选：${options}）`, r.cardName||'') || ''; }
+      let type = p('类型（限定/复刻/常驻）', r.type); if(!['限定','复刻','常驻'].includes(type)){ alert('类型需为“限定/复刻/常驻”'); return; }
+      let cardName = r.cardName; if (type === '常驻'){ const options = (PERMANENT_MAP[role]||[]).join('、');
+          cardName = p(`常驻卡名（可选：${options}）`, r.cardName||'') || '';
+      } else {
+          cardName = p(`${type}卡面名`, r.cardName||'') || ''; // 限定/复刻
+      }
       let pullsStr=p('出金抽数（1–70，留空则不修改）', String(r.pulls ?? ''));
       let pulls=r.pulls; if(pullsStr!==null && pullsStr!==''){ const parsed=coercePulls(pullsStr.trim()); if(parsed===null){ alert('出金抽数需为 1–70 的整数'); return; } pulls=parsed; }
       let remark=p('备注（无/双金/三金）', r.remark||'无') || '无'; if(!['无','双金','三金'].includes(remark)) remark='无';
