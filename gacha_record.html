@@ -398,8 +398,8 @@ input[type="datetime-local"]::-webkit-datetime-edit{
   const limitedCount = filtered.filter(isLimitedLike).length;
   const permCount    = filtered.filter(r => r.type === '常驻').length;
 
-  const dCount = filtered.filter(r => r.remark === '双金').length;
-  const tCount = filtered.filter(r => r.remark === '三金').length;
+  const dCount = filtered.filter(r => r.remark === '双金').length / 2;
+  const tCount = filtered.filter(r => r.remark === '三金').length / 3;
 
   const limitedPulls = filtered.filter(r => isLimitedLike(r) && typeof r.pulls === 'number');
   const allPulls     = filtered.filter(r => typeof r.pulls === 'number');
