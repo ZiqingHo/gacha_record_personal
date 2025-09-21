@@ -81,7 +81,7 @@
     .hint{ font-size:12px; color:var(--muted); margin-top:2px; }
     .chips{ display:flex; gap:8px; flex-wrap:wrap; }
     .btn.small{ padding:8px 12px; font-size:13px; }
-    .statgrid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
+    .statgrid{ display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; }
     @media (max-width: 620px){ .statgrid{ grid-template-columns: repeat(2, 1fr); } }
     .stat{ background: var(--chip); border:1px solid var(--border); border-radius:12px; padding:12px; min-height:74px; }
     .stat .k{ font-size:12px; color:var(--muted); }
@@ -243,6 +243,7 @@ input[type="datetime-local"]::-webkit-datetime-edit{
         <h2>统计</h2>
         <div class="statgrid" id="statGrid">
           <div class="stat"><div class="k">限定/常驻</div><div class="v" id="statTotal">0/0</div></div>
+          <div class="stat"><div class="k">歪卡率</div><div class="v" id="statOffrate">-</div></div>
           <div class="stat"><div class="k">双金/三金</div><div class="v" id="statMulti">0/0</div></div>
           <div class="stat"><div class="k">限定平均抽数</div><div class="v" id="statAvgLimited">-</div></div>
           <div class="stat"><div class="k">总平均抽数</div><div class="v" id="statAvgAll">-</div></div>
@@ -317,6 +318,7 @@ input[type="datetime-local"]::-webkit-datetime-edit{
     const statMulti = document.getElementById('statMulti');
     const statAvgLimited = document.getElementById('statAvgLimited');
     const statAvgAll = document.getElementById('statAvgAll');
+    const statOffrate = document.getElementById('statOffrate');
     const recordTbody = document.getElementById('recordTbody');
     const table = document.getElementById('recordTable');
     let records = loadRecords();
@@ -407,10 +409,23 @@ input[type="datetime-local"]::-webkit-datetime-edit{
   const avgLimited   = limitedPulls.length ? (limitedPulls.reduce((s,r)=>s+r.pulls,0)/limitedPulls.length) : null;
   const avgAll       = allPulls.length ? (allPulls.reduce((s,r)=>s+r.pulls,0)/allPulls.length) : null;
 
+  // —— 歪卡率 ——
+  // 仅统计“卡池名不包含 ‘常驻池’ & ‘自选池’ ”的记录
+  const offSet = filtered.filter(r => {
+    const p = (r.pool || '');
+    return !p.includes('常驻池') && !p.includes('自选池');
+  });
+  // 分母：限定类 + 常驻；分子：常驻
+  const offDen = offSet.filter(r => isLimitedLike(r) || r.type === '常驻').length;
+  const offNum = offSet.filter(r => r.type === '常驻').length;
+  const offRate = offDen ? (offNum / offDen) : null;
+
+      
   statTotal.textContent      = `${limitedCount}/${permCount}`;  // 限定(含复刻)/常驻
   statMulti.textContent      = `${dCount}/${tCount}`;
   statAvgLimited.textContent = avgLimited === null ? '-' : avgLimited.toFixed(2);
   statAvgAll.textContent     = avgAll === null ? '-' : avgAll.toFixed(2);
+  statOffrate.textContent = offRate === null ? '-' : (offRate * 100).toFixed(2) + '%';
 }
 
  function renderTable(filtered){
