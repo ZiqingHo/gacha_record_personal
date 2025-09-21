@@ -1,4 +1,4 @@
-const VERSION = 'v1.0.15';
+const VERSION = 'v1.0.16';
 const CACHE_NAME = `llsk-gacha-${VERSION}`;
 const ASSETS = [
   './',
