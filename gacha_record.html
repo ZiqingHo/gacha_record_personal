@@ -81,8 +81,8 @@
     .hint{ font-size:12px; color:var(--muted); margin-top:2px; }
     .chips{ display:flex; gap:8px; flex-wrap:wrap; }
     .btn.small{ padding:8px 12px; font-size:13px; }
-    .statgrid{ display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; }
-    @media (max-width: 620px){ .statgrid{ grid-template-columns: repeat(2, 1fr); } }
+    div class{ display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; }
+    @media (max-width: 620px){ div class{ grid-template-columns: repeat(2, 1fr); } }
     .stat{ background: var(--chip); border:1px solid var(--border); border-radius:12px; padding:12px; min-height:74px; }
     .stat .k{ font-size:12px; color:var(--muted); }
     .stat .v{ margin-top:6px; font-size:20px; font-weight:600; }
@@ -243,7 +243,7 @@ input[type="datetime-local"]::-webkit-datetime-edit{
         <h2>统计</h2>
         <div class="statgrid" id="statGrid">
           <div class="stat"><div class="k">限定/常驻</div><div class="v" id="statTotal">0/0</div></div>
-          <div class="stat"><div class="k">歪卡率</div><div class="v" id="statOffrate">-</div></div>
+          <div class="stat"><div class="k">大保底/歪卡率</div><div class="v" id="statOffrate">-</div></div>
           <div class="stat"><div class="k">双金/三金</div><div class="v" id="statMulti">0/0</div></div>
           <div class="stat"><div class="k">限定平均抽数</div><div class="v" id="statAvgLimited">-</div></div>
           <div class="stat"><div class="k">总平均抽数</div><div class="v" id="statAvgAll">-</div></div>
@@ -425,7 +425,12 @@ input[type="datetime-local"]::-webkit-datetime-edit{
   statMulti.textContent      = `${dCount}/${tCount}`;
   statAvgLimited.textContent = avgLimited === null ? '-' : avgLimited.toFixed(2);
   statAvgAll.textContent     = avgAll === null ? '-' : avgAll.toFixed(2);
-  statOffrate.textContent = offRate === null ? '-' : (offRate * 100).toFixed(2) + '%';
+  if (offRate === null) {
+    statOffrate.textContent = '-';
+  } else {
+    const label = `${offNum}/${(offRate * 100).toFixed(2)}%`;
+    statOffrate.textContent = label;
+  }
 }
 
  function renderTable(filtered){
